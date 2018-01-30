@@ -1,8 +1,8 @@
 import Control.Monad (forM_)
 import Control.Monad.ST
 import Data.Array.ST
-import Primes
 import Data.Function
+import Primes
 
 sumDiv :: Int -> Int
 sumDiv 1 = 1
