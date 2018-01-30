@@ -8,6 +8,8 @@ import Control.Monad
 import Control.Monad.ST
 import Data.Array.ST
 import Data.Array.Unboxed
+import qualified Data.Vector.Unboxed as V
+import qualified Data.Vector.Unboxed.Mutable as MV
 
 primes :: [Int]
 primes =
@@ -17,7 +19,7 @@ primes =
 -- Strict version of Eratosthenes' sieve implemented using unboxed mutable
 -- arrays
 primes' :: Int -> [Int]
-primes' n = map fst $ filter snd (assocs sieve)
+primes' n = [i | (i, True) <- assocs sieve]
   where
     sieve =
       runSTUArray $ do
@@ -26,8 +28,23 @@ primes' n = map fst $ filter snd (assocs sieve)
         forM_ [3,5 .. isqrt n] (\i -> do
           p <- readArray arr i
           when p $
-            forM_ [i * i,i * i + 2 * i .. n] (\k -> writeArray arr k False))
+            forM_ [i * i,i * i + 2 * i .. n] $ \k -> writeArray arr k False)
         return arr
+    isqrt = floor . sqrt . fromIntegral 
+
+
+primesVec :: Int -> V.Vector Int
+primesVec n = V.elemIndices True sieve
+  where
+    sieve =
+      V.create $ do
+        vect <- MV.replicate (n + 1) True :: ST s (MV.MVector s Bool)
+        forM_ (0 : 1 : [4,6 .. n]) (\i -> MV.write vect i False) -- even numbers + {0,1}
+        forM_ [3,5 .. isqrt n] (\i -> do
+             p <- MV.read vect i
+             when p $
+               forM_ [i * i,i * i + 2 * i .. n] $ \k -> MV.write vect k False)
+        return vect
     isqrt = floor . sqrt . fromIntegral 
 
 primeFactors :: Int -> [Int]
